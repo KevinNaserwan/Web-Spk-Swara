@@ -119,7 +119,56 @@ class CRUD extends Controller
 
     public function dataakhir()
     {
-        return view('Admin.Menu.datahasilakhir');
+        $kriteria = datakriteria::orderByDesc('bobot')->get();
+
+        // Add a sequence number to each item
+        $kriteriaWithNumber = $kriteria->map(function ($item, $key) {
+            return (object) ['number' => $key + 1, 'kriteria' => $item];
+        });
+
+        $kriteria2 = datakriteria::all();
+        $nilai = datapenilai::all()->groupBy('nama_alternatif');
+        $nilai2 = datapenilai::all()->groupBy(['kode']);
+
+        // Hitung nilai kuadrat dan jumlahkan berdasarkan nama_alternatif dan kode
+        $nilaiKuadratJumlah = [];
+        foreach ($nilai2 as $nama_alternatif => $data) {
+            $kuadratJumlah = 0;
+            foreach ($data as $item) {
+                $kuadratJumlah += pow($item->nilai, 2);
+            }
+            $nilaiKuadratJumlah[$nama_alternatif] = sqrt($kuadratJumlah);
+        }
+
+        // $nilaiKuadratJumlah2 = [];
+        // foreach ($nilai2 as $nama_alternatif => $data) {
+        //     $kuadratJumlah = 0;
+        //     foreach ($data as $item) {
+        //         $kuadratJumlah += pow($item->nilai, 2);
+        //     }
+        //     $nilaiKuadratJumlah2[] = sqrt($kuadratJumlah);
+        // }
+
+        $nilaiKuadratJumlah2 = [];
+        foreach ($nilai2 as $nama_alternatif => $data) {
+            $kuadratJumlah = 0;
+
+            foreach ($data as $item) {
+                // Assuming there is a foreign key relationship and the column names are correct
+                $kode = $item->kode;
+                $nilai_kriteria = datakriteria::where('kode', $kode)->first()->nilai;
+
+                $kuadratJumlah += pow($item->nilai, 2);
+            }
+
+            $nilaiKuadratJumlah2[] = sqrt($kuadratJumlah);
+        }
+
+        // dd($datapenilaianWithJenis);
+        $kriteriaCost = str_replace(['[', ']', '"'], '', datakriteria::where('jenis', 'Cost')->pluck('kode'));
+
+        $kriteriaBenefit = str_replace(['[', ']', '"'], '', datakriteria::where('jenis', 'benefit')->pluck('kode'));
+        return view('Admin.Menu.datahasilakhir', ['cost' => $kriteriaCost, 'benefit' => $kriteriaBenefit, 'kriteria' => $kriteriaWithNumber, 'nilai' => $nilai, 'nilai3' => $nilaiKuadratJumlah2, 'nilai2' => $nilaiKuadratJumlah, 'kriteria2' => $kriteria2]);
     }
 
     public function postdatakriteria(Request $request)

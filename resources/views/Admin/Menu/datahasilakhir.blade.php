@@ -185,15 +185,75 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                                     <thead class=" bg-success text-white">
                                         <tr>
                                             <th>Alternatif</th>
                                             <th>Nilai</th>
-                                            <th>Rank</th>
+                                            {{-- <th>Rank</th> --}}
                                         </tr>
                                     </thead>
+                                    @php
+                                        $sum = $kriteria->pluck('number')->sum();
+                                        $count = $kriteria->count();
+                                        $average = $count > 0 ? $sum / $count : 0;
+
+                                        // Calculate $sumQi once before the loop
+                                        $previousKj = 1;
+                                        $sumQi = 0;
+                                        foreach ($kriteria as $item) {
+                                            $Qi = $previousKj / (($item->number - 1) / $average + 1);
+                                            $previousKj = $Qi;
+                                            $sumQi += $Qi;
+                                        }
+                                    @endphp
+                                    @php
+                                        $previousKj = 1; // Initialize a variable to store the previous value of Kj
+                                    @endphp
+
+                                    @foreach ($kriteria as $index => $item)
+                                        @php
+                                            $Qi = $previousKj / (($item->number - 1) / $average + 1);
+                                            $previousKj = $Qi;
+                                            $Wi = $Qi / $sumQi;
+                                        @endphp
+                                        @php
+                                            $wiValues[$index] = $Wi; // Store the Wi values in an array for later use
+                                        @endphp
+                                    @endforeach
                                     <tbody>
+                                        @foreach ($nilai as $namaAlternatif => $items)
+                                            @php
+                                                $total = 0;
+                                                $total1 = 0; // Set total ke 0 di awal setiap iterasi
+                                            @endphp
+                                            @foreach ($nilai3 as $index => $item)
+                                                @if (isset($items[$index]))
+                                                    @php
+                                                        $result = $items[$index]->nilai / $item / ($wiValues[$index] ?? 1);
+                                                        $total += $result; // Menambahkan hasil ke variabel total
+                                                    @endphp
+                                                @else
+                                                    <td>Undefined</td>
+                                                @endif
+                                            @endforeach
+                                            @foreach ($nilai3 as $index => $item)
+                                                @if ($index != 3 && $index != 4)
+                                                    @if (isset($items[$index]))
+                                                        @php
+                                                            $result1 = $items[$index]->nilai / $item / ($wiValues[$index] ?? 1);
+                                                            $total1 += $result1; // Menambahkan hasil ke variabel total
+                                                        @endphp
+                                                    @else
+                                                        <td>Undefined</td>
+                                                    @endif
+                                                @endif
+                                            @endforeach
+                                            <tr>
+                                                <td>{{ $namaAlternatif }}</td>
+                                                <td>{{ $total1 - ($total - $total1) }}</td>
+                                            </tr>
+                                        @endforeach
                                     </tbody>
                                 </table>
                             </div>
